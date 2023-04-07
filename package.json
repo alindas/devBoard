@@ -11,14 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "antd": "^4.19.3",
-    "classnames": "^2.3.1",
-    "intro.js": "^5.1.0",
-    "intro.js-react": "^0.6.0",
-    "pixi.js": "^6.3.0",
     "react": "^17.0.2",
-    "react-custom-scrollbars-2": "^4.4.0",
-    "react-dom": "^17.0.2",
-    "umi-request": "^1.4.0"
+    "react-dom": "^17.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.17.8",
