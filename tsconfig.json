@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./",
+    "module": "es2015",
+    "target": "es5",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["src/*"],
+    }
+  },
+  "include": [
+    "src/*",
+    "src/**/*", "global.d.ts",
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

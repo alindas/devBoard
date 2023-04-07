@@ -1,0 +1,49 @@
+@import './utils//normalize.css';
+
+@font-face {
+  font-family: 'pfl';
+  src: url('../public/font/pingfangsc-light.ttf');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'pfr';
+  src: url('../public/font/pingfangsc-regular.ttf');
+  font-display: swap;
+}
+
+body {
+  font-family: 'pfr';
+}
+
+body,
+ul,
+li {
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  list-style: none;
+}
+
+button {
+  border: none;
+  outline: none;
+}
+
+div,
+ul {
+  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: normal;
+}
