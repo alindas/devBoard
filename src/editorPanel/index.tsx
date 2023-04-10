@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useLayoutEffect, WheelEvent } from 'react';
 import { Popover, Slider } from 'antd';
 import {
   MinusOutlined,
@@ -9,16 +9,17 @@ import {
   EyeInvisibleOutlined,
 } from '@ant-design/icons';
 
+import IEditorPanel, { IDefaultSet, TOriginInfo } from './interface'
 import './index.css';
-import Ruler from './Ruler.jsx';
-import Line from './Line.jsx';
+import Ruler from './Ruler';
+import Line from './Line';
 import Thumbnail from './Thumbnail';
 import debounce from './utils/debounce.js';
 import throttle from './utils/throttle.js';
 import { checkOffset } from './utils/checkOffset';
 import { drawLine } from './utils/drawLine';
 
-export function getChangeLine(val) {
+export function getChangeLine(val: number) {
   if (val < 20) {
     return [20, 0]
 
@@ -77,7 +78,9 @@ const DEFAULT_SET = {
   zoomMode: '',
 }
 
-export default function EditorPanel(props) {
+
+
+export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   const {
     enableDrag = true,
@@ -107,29 +110,29 @@ export default function EditorPanel(props) {
   const [hLines, setHLines] = useState([]);
   const [vLines, setVLines] = useState([]);
 
-  const wpRef = useRef(null); // editor 最外层 dom
-  const canvasRef = useRef(null); // canvas 最外层 dom
-  const pageRef = useRef(null); // page 层 dom
-  const hWpRuler = useRef(null); // 水平刻度 dom
-  const hRuler = useRef(null); // 水平刻度辅助线 dom
-  const hRulerValue = useRef(null); // 水平辅助线 value
-  const vWpRuler = useRef(null);
-  const vRuler = useRef(null);
-  const vRulerValue = useRef(null);
-  const lineHelperRef = useRef(null); // 对齐辅助线 canvas
+  const wpRef = useRef<HTMLDivElement>(null); // editor 最外层 dom
+  const canvasRef = useRef<HTMLDivElement>(null); // canvas 最外层 dom
+  const pageRef = useRef<HTMLDivElement>(null); // page 层 dom
+  const hWpRuler = useRef<HTMLDivElement>(null); // 水平刻度 dom
+  const hRuler = useRef<HTMLDivElement>(null); // 水平刻度辅助线 dom
+  const hRulerValue = useRef<HTMLSpanElement>(null); // 水平辅助线 value
+  const vWpRuler = useRef<HTMLDivElement>(null);
+  const vRuler = useRef<HTMLDivElement>(null);
+  const vRulerValue = useRef<HTMLSpanElement>(null);
+  const lineHelperRef = useRef<HTMLCanvasElement>(null); // 对齐辅助线 canvas
 
   // 可通过外部传入的数据
-  const defaultSetting = useRef({
+  let defaultSetting = useRef<IDefaultSet>({
     ...DEFAULT_SET,
     ...props,
-  });
+  }).current;
 
   // 用于自身调整值
-  const originInfo = useRef({
+  const originInfo = useRef<TOriginInfo>({
 
     firstMounted: true,
 
-    clientReact: {},
+    // clientReact: {},
 
     leftOffset: 0, /** 面板距离客户端左侧距离 */
     topOffset: 0,
@@ -154,29 +157,31 @@ export default function EditorPanel(props) {
     vLines: {}, // 方便拖拽组件时对齐
     hLines: {},
 
-  });
+  }).current;
 
   // 初始化
   useLayoutEffect(() => {
-    originInfo.current.dynamicTuning = debounce(() => selectZoom(-1), 300);
+    originInfo.dynamicTuning = debounce(() => selectZoom(-1), 300);
     // 溢出滚动调整
-    const scrollTrimming = debounce((e) => {
+    const scrollTrimming: any = debounce((e: { shiftKey: any; ctrlKey: any; }) => {
       if (e.shiftKey || e.ctrlKey) {
         updateSize();
       }
     }, 300);
-    document.addEventListener('mousewheel', scrollTrimming, { passive: false });
-    document.addEventListener('DOMMouseScroll', scrollTrimming, { passive: false });
+    document.addEventListener('wheel', scrollTrimming, { passive: false });
+    document.addEventListener('mousewheel', scrollTrimming, { passive: false }); // 兼容低版本 -webkit 浏览器
+    document.addEventListener('DOMMouseScroll', scrollTrimming, { passive: false }); // 兼容低版本 -ff 浏览器
 
     // 使用 resizeObserver 监听面板宽高的动态变化
-    const Performance = debounce(() => {
+    const performanceFn: any = debounce(() => {
       updateSize();
       selectZoom(-1);
     }, 300);
-    const resizeObserver = new ResizeObserver(Performance);
+    const resizeObserver = new ResizeObserver(performanceFn);
     resizeObserver.observe(wpRef.current);
 
     return () => {
+      document.removeEventListener('wheel', scrollTrimming);
       document.removeEventListener('mousewheel', scrollTrimming);
       document.removeEventListener('DOMMouseScroll', scrollTrimming);
       resizeObserver.disconnect();
@@ -189,29 +194,29 @@ export default function EditorPanel(props) {
     updateSize();
 
     wpRef.current.onmousedown = () => {
-      originInfo.current.selfClick = true;
+      originInfo.selfClick = true;
     }
 
-    function handleDragEnd(e) {
+    function handleDragEnd(e: MouseEvent) {
       // 如果是在自身区域的点击或者指定是否开启响应则退出
-      if (originInfo.current.selfClick || !originInfo.current.enableDrag ||
-        e.clientX < originInfo.current.clientReact.left ||
-        e.clientX > (originInfo.current.clientReact.left + originInfo.current.clientReact.width) ||
-        e.clientY < originInfo.current.clientReact.top ||
-        e.clientY > (originInfo.current.clientReact.top + originInfo.current.clientReact.height)
+      if (originInfo.selfClick || !originInfo.enableDrag ||
+        e.clientX < originInfo.clientReact.left ||
+        e.clientX > (originInfo.clientReact.left + originInfo.clientReact.width) ||
+        e.clientY < originInfo.clientReact.top ||
+        e.clientY > (originInfo.clientReact.top + originInfo.clientReact.height)
       ) {
-        originInfo.current.selfClick = false;
+        originInfo.selfClick = false;
         return;
       }
       const dropPos = {
-        left: Math.round((e.clientX - originInfo.current.transformX - originInfo.current.leftOffset - defaultSetting.current.startMarginZoom) * originInfo.current.unit),
-        top: Math.round((e.clientY - originInfo.current.transformY - originInfo.current.topOffset - defaultSetting.current.startMarginZoom) * originInfo.current.unit),
+        left: Math.round((e.clientX - originInfo.transformX - originInfo.leftOffset - defaultSetting.startMarginZoom) * originInfo.unit),
+        top: Math.round((e.clientY - originInfo.transformY - originInfo.topOffset - defaultSetting.startMarginZoom) * originInfo.unit),
         acLeft: e.clientX,
         acTop: e.clientY,
-        unit: originInfo.current.unit,
+        unit: originInfo.unit,
       }
       // console.log(dropPos);
-      props.onDragEnd && props.onDragEnd(dropPos, true);
+      props.onDragEnd?.(dropPos, true);
     }
 
     document.addEventListener('mouseup', handleDragEnd, true);
@@ -228,14 +233,14 @@ export default function EditorPanel(props) {
     const ctx = lineHelperRef.current.getContext('2d');
     let end = false;
 
-    const checkPos = throttle((e) => {
-      const { leftOffset: ol, topOffset: ot, zoomPageWidth: ow, zoomPageHeight: oh } = originInfo.current;
+    const checkPos: any = throttle((e: MouseEvent) => {
+      const { leftOffset: ol, topOffset: ot, zoomPageWidth: ow, zoomPageHeight: oh } = originInfo;
       // console.log(ow, oh, e.clientX, e.clientY);
-      const { startMarginZoom, screenWidth, screenHeight } = defaultSetting.current;
+      const { startMarginZoom, screenWidth, screenHeight } = defaultSetting;
       const minOt = ot + startMarginZoom;
       const minOl = ol + startMarginZoom;
 
-      if (!originInfo.current.enableLineHelper ||
+      if (!originInfo.enableLineHelper ||
         e.clientX < minOl ||
         e.clientY < minOt ||
         e.clientX > minOl + ow ||
@@ -256,9 +261,9 @@ export default function EditorPanel(props) {
         vLines,
         hLines,
         unit,
-      } = originInfo.current;
+      } = originInfo;
 
-      const { hc, vc } = defaultSetting.current;
+      const { hc, vc } = defaultSetting;
 
       // console.log('e');
       const offset = 2 * unit;
@@ -266,7 +271,7 @@ export default function EditorPanel(props) {
       const offsetY = 18 * unit;
       ctx.font = `900 ${Math.ceil(18 * unit)}px serif`;
 
-      let ex, ey, ew = 0, eh = 0, left = -1, top = -1;
+      let ex: number, ey: number, ew = 0, eh = 0, left = -1, top = -1;
       ctx.clearRect(0, 0, screenWidth, screenHeight);
       if (dragTarget == null) { // 从资产库拖入
         ex = Math.round((e.clientX - transformX - leftOffset - startMarginZoom) * unit);
@@ -312,7 +317,8 @@ export default function EditorPanel(props) {
       }
 
       // 与刻度尺对齐检查
-      for (let h of Object.keys(hLines)) {
+      for (let strH of Object.keys(hLines)) {
+        const h = +strH;
         if (checkOffset(ex - h, offset)) { // 贴左
           left = h;
           drawLine(ctx, h, 0, h, screenHeight);
@@ -329,7 +335,8 @@ export default function EditorPanel(props) {
         }
       }
 
-      for (let v of Object.keys(vLines)) {
+      for (let strV of Object.keys(vLines)) {
+        const v = +strV;
         if (checkOffset(ey - v, offset)) { // 贴上
           top = v;
           drawLine(ctx, 0, v, screenWidth, v);
@@ -383,34 +390,34 @@ export default function EditorPanel(props) {
       // 和其他的组件进行对齐检查
       ctx.setLineDash([5 * unit]);
 
-      domList.forEach(dom => {
+      domList.forEach((dom: { top: number; left: number; width: number; height: number; }) => {
         let Hit = false;
         if (checkOffset(Math.round(dom.top - ey), offset)) { // 上贴上
           top = dom.top;
           Hit = true;
           drawLine(ctx, ex, top, dom.left + dom.width, top);
-          ctx.fillText(Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey - offsetY);
+          ctx.fillText(''+Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey - offsetY);
 
         }
         if (checkOffset(Math.round(dom.top + dom.height - ey), offset)) { // 上贴下
           top = dom.top + dom.height;
           Hit = true;
           drawLine(ctx, ex, top, dom.left + dom.width, top);
-          ctx.fillText(Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey - offsetY);
+          ctx.fillText(''+Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey - offsetY);
 
         }
         if (checkOffset(Math.round(dom.left - ex), offset)) { // 左贴左
           left = dom.left;
           Hit = true;
           drawLine(ctx, left, ey, left, dom.top + dom.height);
-          ctx.fillText(Math.round(ey - dom.top - dom.height), ex - offsetX, (ey + dom.top + dom.height) / 2);
+          ctx.fillText(''+Math.round(ey - dom.top - dom.height), ex - offsetX, (ey + dom.top + dom.height) / 2);
 
         }
         if (checkOffset(Math.round(dom.left + dom.width - ex), offset)) { // 左贴右
           left = dom.left + dom.width;
           Hit = true;
           drawLine(ctx, left, ey, left, dom.top + dom.height);
-          ctx.fillText(Math.round(ey - dom.top - dom.height), ex - offsetX, (ey + dom.top + dom.height) / 2);
+          ctx.fillText(''+Math.round(ey - dom.top - dom.height), ex - offsetX, (ey + dom.top + dom.height) / 2);
 
         }
 
@@ -418,28 +425,28 @@ export default function EditorPanel(props) {
           left = dom.left - ew;
           Hit = true;
           drawLine(ctx, dom.left, ey, dom.left, dom.top + dom.height);
-          ctx.fillText(Math.round(ey - dom.top - dom.height), ex + ew + offsetY, (ey + dom.top + dom.height) / 2);
+          ctx.fillText(''+Math.round(ey - dom.top - dom.height), ex + ew + offsetY, (ey + dom.top + dom.height) / 2);
 
         }
         if (checkOffset(Math.round(dom.left + dom.width - ex - ew), offset)) { // 右贴右
           left = dom.left - dom.width + ew;
           Hit = true;
           drawLine(ctx, dom.left + dom.width, ey, dom.left + dom.width, dom.top + dom.height);
-          ctx.fillText(Math.round(ey - dom.top - dom.height), ex + ew + offsetY, (ey + dom.top + dom.height) / 2);
+          ctx.fillText(''+Math.round(ey - dom.top - dom.height), ex + ew + offsetY, (ey + dom.top + dom.height) / 2);
 
         }
         if (checkOffset(Math.round(dom.top - ey - eh), offset)) { // 下贴上
           top = dom.top - eh;
           Hit = true;
           drawLine(ctx, ex, dom.top, dom.left + dom.width, dom.top);
-          ctx.fillText(Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey + eh + offsetY);
+          ctx.fillText(''+Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey + eh + offsetY);
 
         }
         if (checkOffset(Math.round(dom.top + dom.height - ey - eh), offset)) { // 下贴下
           top = dom.top - dom.height + eh;
           Hit = true;
           drawLine(ctx, ex, dom.top + dom.height, dom.left + dom.width, dom.top + dom.height);
-          ctx.fillText(Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey + eh + offsetY);
+          ctx.fillText(''+Math.round(ex - dom.left - dom.width), (ex + dom.left + dom.width) / 2, ey + eh + offsetY);
 
         }
 
@@ -454,14 +461,14 @@ export default function EditorPanel(props) {
       if (left != -1 || top != -1) {
 
         end = false;
-        props.onChasingLine && props.onChasingLine({
+        props.onChasingLine?.({
           left: Math.round(left),
           top: Math.round(top)
         });
 
       } else if (left == -1 && top == -1) {
         if (!end) {
-          props.onChasingLine && props.onChasingLine({
+          props.onChasingLine?.({
             left: left,
             top: top
           });
@@ -491,22 +498,22 @@ export default function EditorPanel(props) {
   // 监听 ctrl + 滑轮、ctrl + 鼠标左键对画布进行缩放和移动
   useEffect(() => {
 
-    function handleTranslate(e, type) {
-      let wheelDelta = type === 'moz' ? -e.detail * 20 : e.wheelDelta;
+    function handleTranslate(e: globalThis.WheelEvent, type: string) {
+      let wheelDelta = type === 'moz' ? -e.detail * 20 : e['wheelDelta'];
       if (e.shiftKey) {
-        originInfo.current.transformX += wheelDelta;
-        if (originInfo.current.transformX > 0) {
-          originInfo.current.transformX = 0;
+        originInfo.transformX += wheelDelta;
+        if (originInfo.transformX > 0) {
+          originInfo.transformX = 0;
           // return;
         } else if (wheelDelta < 0) {
-          let distance_added = - originInfo.current.transformX + originInfo.current.clientReact.width - 2 * defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeight;
-          // console.log(distance_added, originInfo.current.zoomPageHeight);
+          let distance_added = - originInfo.transformX + originInfo.clientReact.width - 2 * defaultSetting.startMarginZoom - defaultSetting.scaleHeight;
+          // console.log(distance_added, originInfo.zoomPageHeight);
           // 如果超出画布则不再继续
-          if (distance_added > originInfo.current.zoomPageWidth) {
-            let distance = -originInfo.current.transformX + wheelDelta + originInfo.current.clientReact.width - 2 * defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeight;
+          if (distance_added > originInfo.zoomPageWidth) {
+            let distance = -originInfo.transformX + wheelDelta + originInfo.clientReact.width - 2 * defaultSetting.startMarginZoom - defaultSetting.scaleHeight;
 
-            if (distance > originInfo.current.zoomPageWidth) {
-              originInfo.current.transformX -= wheelDelta;
+            if (distance > originInfo.zoomPageWidth) {
+              originInfo.transformX -= wheelDelta;
               // return;
 
             }
@@ -514,20 +521,20 @@ export default function EditorPanel(props) {
         }
 
       } else {
-        originInfo.current.transformY += wheelDelta;
-        // console.log(originInfo.current.transformY);
-        if (originInfo.current.transformY > 0) {
-          originInfo.current.transformY = 0;
+        originInfo.transformY += wheelDelta;
+        // console.log(originInfo.transformY);
+        if (originInfo.transformY > 0) {
+          originInfo.transformY = 0;
           // return;
         } else if (wheelDelta < 0) {
-          let distance_added = - originInfo.current.transformY + originInfo.current.clientReact.height - 2 * defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeight;
-          // console.log(distance_added, originInfo.current.zoomPageHeight);
+          let distance_added = - originInfo.transformY + originInfo.clientReact.height - 2 * defaultSetting.startMarginZoom - defaultSetting.scaleHeight;
+          // console.log(distance_added, originInfo.zoomPageHeight);
           // 如果超出画布则不再继续
-          if (distance_added > originInfo.current.zoomPageHeight) {
-            let distance = -originInfo.current.transformY + wheelDelta + originInfo.current.clientReact.height - 2 * defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeight;
+          if (distance_added > originInfo.zoomPageHeight) {
+            let distance = -originInfo.transformY + wheelDelta + originInfo.clientReact.height - 2 * defaultSetting.startMarginZoom - defaultSetting.scaleHeight;
 
-            if (distance > originInfo.current.zoomPageHeight) {
-              originInfo.current.transformY -= wheelDelta;
+            if (distance > originInfo.zoomPageHeight) {
+              originInfo.transformY -= wheelDelta;
               // return;
 
             }
@@ -542,14 +549,14 @@ export default function EditorPanel(props) {
 
     }
 
-    function handleWheel(e) {
+    function handleWheel(e: globalThis.WheelEvent) {
 
       // 缩放
       if (e.ctrlKey) {
         e.preventDefault();
-        const zoom = parseInt(originInfo.current.zoom);
+        const zoom = originInfo.zoom;
 
-        if (e.wheelDelta > 0) { // 放大
+        if (e['wheelDelta'] > 0) { // 放大
         zoom + 50 <= 200 && changeZoom(zoom + 50);
 
         } else {
@@ -558,17 +565,17 @@ export default function EditorPanel(props) {
         }
 
       } else { // 移动
-        handleTranslate(e, 'c');
+        handleTranslate(e, 'webkit');
       }
       // console.log(e);
     }
 
-    function handleMOZWheel(e) {
+    function handleMOZWheel(e: globalThis.WheelEvent) {
 
       // 缩放
       if (e.ctrlKey) {
         e.preventDefault();
-        const zoom = parseInt(originInfo.current.zoom);
+        const zoom = originInfo.zoom;
 
         if (e.detail < 0) { // 放大
           zoom + 50 <= 200 && changeZoom(zoom + 50);
@@ -584,6 +591,7 @@ export default function EditorPanel(props) {
     }
 
 
+    wpRef.current.addEventListener('wheel', handleWheel, { passive: false });
     wpRef.current.addEventListener('mousewheel', handleWheel, { passive: false });
     wpRef.current.addEventListener('DOMMouseScroll', handleMOZWheel, { passive: false });
 
@@ -599,7 +607,7 @@ export default function EditorPanel(props) {
     // console.log(props);
     const scaleHeightZoom = (props.scaleHeight ?? DEFAULT_SET.scaleHeight) * window.devicePixelRatio;
     const startMarginZoom = (props.startMargin ?? DEFAULT_SET.startMargin) * window.devicePixelRatio;
-    defaultSetting.current = {
+    defaultSetting = {
       ...DEFAULT_SET,
       scaleHeightZoom,
       startMarginZoom,
@@ -608,7 +616,7 @@ export default function EditorPanel(props) {
       ...props,
     }
     if (isNaN(inheritZoom) || inheritZoom === -1) {
-      originInfo.current.dynamicTuning();
+      originInfo.dynamicTuning();
 
     } else {
       inheritZoom !== zoom && selectZoom(inheritZoom);
@@ -616,71 +624,71 @@ export default function EditorPanel(props) {
   }, [screenWidth, screenHeight, inheritZoom])
 
   useEffect(() => {
-    originInfo.current.enableDrag = enableDrag;
+    originInfo.enableDrag = enableDrag;
   }, [enableDrag])
 
   // 动态更新组件布局信息
   useEffect(() => {
-    originInfo.current.dragTarget = dragTarget;
+    originInfo.dragTarget = dragTarget;
     // console.log(props.dragTarget);
   }, [makeCustomized])
 
   // 根据开关切换辅助线的显隐
   useEffect(() => {
-    originInfo.current.enableLineHelper = enableLineHelper;
-    originInfo.current.domList = makeCustomized;
+    originInfo.enableLineHelper = enableLineHelper;
+    originInfo.domList = makeCustomized;
     if (!enableLineHelper) {
-      originInfo.current.dragTarget = null;
-      originInfo.current.originalDragTarget = null;
-      props.onChasingLine && props.onChasingLine({
+      originInfo.dragTarget = null;
+      originInfo.originalDragTarget = null;
+      props.onChasingLine?.({
         left: -1,
         top: -1
       });
     } else {
-      originInfo.current.originalDragTarget = dragTarget;
+      originInfo.originalDragTarget = dragTarget;
     }
 
   }, [enableLineHelper])
 
   // 控制第一次挂载
   // useEffect(() => {
-  //   // originInfo.current.firstMounted = false;
+  //   // originInfo.firstMounted = false;
   // }, [])
 
   function updateSize() {
     if (wpRef.current == null) return;
     if (zoom >= 18 || zoom <= 200) {
-      defaultSetting.current.scaleHeightZoom = defaultSetting.current.scaleHeight * window.devicePixelRatio;
-      defaultSetting.current.startMarginZoom = defaultSetting.current.startMargin * window.devicePixelRatio;
+      defaultSetting.scaleHeightZoom = defaultSetting.scaleHeight * window.devicePixelRatio;
+      defaultSetting.startMarginZoom = defaultSetting.startMargin * window.devicePixelRatio;
 
     }
 
     const offsetXY = wpRef.current.getBoundingClientRect();
-    originInfo.current.clientReact = offsetXY;
-    originInfo.current.leftOffset = Math.ceil(offsetXY.left) + defaultSetting.current.scaleHeightZoom; // 起始位置离视口左边距
-    originInfo.current.topOffset = Math.ceil(offsetXY.top) + defaultSetting.current.scaleHeightZoom; // 起始位置离视口上边距
-    originInfo.current.ratio = defaultSetting.current.precision / defaultSetting.current.lineMargin; // 设备像素比
+    originInfo.clientReact = offsetXY;
+    originInfo.leftOffset = Math.ceil(offsetXY.left) + defaultSetting.scaleHeightZoom; // 起始位置离视口左边距
+    originInfo.topOffset = Math.ceil(offsetXY.top) + defaultSetting.scaleHeightZoom; // 起始位置离视口上边距
+    originInfo.ratio = defaultSetting.precision / defaultSetting.lineMargin; // 设备像素比
 
   }
 
   // 刻度线，页面位置调整
   function transformDoc() {
     pageRef.current.style.transform =
-      `scale(${1 / originInfo.current.unit}) translate(${originInfo.current.transformX * originInfo.current.unit}px,${originInfo.current.transformY * originInfo.current.unit}px)`;
-    hWpRuler.current.style.transform = `translateX(${originInfo.current.transformX}px`;
-    vWpRuler.current.style.transform = `rotate(90deg) translateX(${originInfo.current.transformY}px`;
+      `scale(${1 / originInfo.unit}) translate(${originInfo.transformX * originInfo.unit}px,${originInfo.transformY * originInfo.unit}px)`;
+    hWpRuler.current.style.transform = `translateX(${originInfo.transformX}px`;
+    vWpRuler.current.style.transform = `rotate(90deg) translateX(${originInfo.transformY}px`;
   }
 
   // 进入刻度尺
-  function handleMouseEnter(e, type = 'h') {
-    // console.log(defaultSetting.current);
+  function handleMouseEnter(e: { clientX: number; clientY: number; }, type = 'h') {
+    // console.log(defaultSetting);
     switch (type) {
       case 'h': {
         setHIndicator(true);
         Promise.resolve().then(() => {
-          hRuler.current.setAttribute('style', `left: ${e.clientX - originInfo.current.leftOffset}px; transform: translateY(${defaultSetting.current.scaleHeight}px)`);
+          hRuler.current.setAttribute('style', `left: ${e.clientX - originInfo.leftOffset}px; transform: translateY(${defaultSetting.scaleHeight}px)`);
 
-        }, 50);
+        });
         break;
 
       }
@@ -688,7 +696,7 @@ export default function EditorPanel(props) {
       case 'v': {
         setVIndicator(true);
         Promise.resolve().then(() => {
-          vRuler.current.setAttribute('style', `left: ${e.clientY - originInfo.current.topOffset}px; transform: translateY(-100%)`);
+          vRuler.current.setAttribute('style', `left: ${e.clientY - originInfo.topOffset}px; transform: translateY(-100%)`);
 
         });
         break;
@@ -702,7 +710,7 @@ export default function EditorPanel(props) {
   }
 
   // 离开刻度尺
-  function handleMouseLeave(e, type = 'h') {
+  function handleMouseLeave(e: any, type = 'h') {
     switch (type) {
       case 'h': {
         setHIndicator(false);
@@ -723,13 +731,13 @@ export default function EditorPanel(props) {
   }
 
   // 在刻度尺上移动
-  function handleMouseMove(e, type = 'h') {
+  function handleMouseMove(e: { clientX: number; clientY: number; }, type = 'h') {
     switch (type) {
       case 'h': {
         if (hIndicator) {
-          const leftOffset = e.clientX - originInfo.current.transformX - originInfo.current.leftOffset;
-          hRuler.current.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.current.scaleHeightZoom}px)`);
-          hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.current.startMarginZoom) * originInfo.current.unit);
+          const leftOffset = e.clientX - originInfo.transformX - originInfo.leftOffset;
+          hRuler.current.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.scaleHeightZoom}px)`);
+          hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
         } else {
           setHIndicator(true);
@@ -740,9 +748,9 @@ export default function EditorPanel(props) {
 
       case 'v': {
         if (vIndicator) {
-          const topOffset = e.clientY - originInfo.current.transformY - originInfo.current.topOffset;
+          const topOffset = e.clientY - originInfo.transformY - originInfo.topOffset;
           vRuler.current.setAttribute('style', `left: ${topOffset}px; transform: translateY(-100%)`);
-          vRulerValue.current.innerHTML = Math.round((topOffset - defaultSetting.current.startMarginZoom) * originInfo.current.unit);
+          vRulerValue.current.innerHTML = Math.round((topOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
         } else {
           setVIndicator(true);
@@ -759,16 +767,16 @@ export default function EditorPanel(props) {
   }
 
   // 创建参考线
-  function handleRulerClick(e, type = 'h') {
+  function handleRulerClick(e: { clientX: number; clientY: number; }, type = 'h') {
     // console.log('x', e.clientX);
     // console.log('y', e.clientY);
-    // console.log(defaultSetting.current);
+    // console.log(defaultSetting);
     switch (type) {
       case 'h': {
-        const realPos = e.clientX - originInfo.current.transformX - originInfo.current.leftOffset - defaultSetting.current.startMarginZoom;
+        const realPos = e.clientX - originInfo.transformX - originInfo.leftOffset - defaultSetting.startMarginZoom;
         const lines = hLines.filter(item => item != realPos);
         lines.push(realPos);
-        originInfo.current.hLines[Math.round(realPos * originInfo.current.unit)] = 1;
+        originInfo.hLines[Math.round(realPos * originInfo.unit)] = 1;
 
         setHLines(lines);
         setHIndicator(false);
@@ -777,11 +785,11 @@ export default function EditorPanel(props) {
       }
 
       case 'v': {
-        const realPos = e.clientY - originInfo.current.transformY - originInfo.current.topOffset - defaultSetting.current.startMarginZoom;
+        const realPos = e.clientY - originInfo.transformY - originInfo.topOffset - defaultSetting.startMarginZoom;
         const lines = vLines.filter(item => item != realPos);
         lines.push(realPos);
-        // originInfo.current.vLines.push(Math.round(realPos * originInfo.current.unit));
-        originInfo.current.vLines[Math.round(realPos * originInfo.current.unit)] = 1;
+        // originInfo.vLines.push(Math.round(realPos * originInfo.unit));
+        originInfo.vLines[Math.round(realPos * originInfo.unit)] = 1;
 
         setVLines(lines);
         setVIndicator(false);
@@ -796,11 +804,11 @@ export default function EditorPanel(props) {
   }
 
   // 双击删除参考线
-  function handleLineDBClick(val, type) {
+  function handleLineDBClick(val: number, type: string) {
     switch (type) {
       case 'h': {
         const lines = hLines.filter(item => item != val);
-        delete originInfo.current.hLines[Math.round(val * originInfo.current.unit)];
+        delete originInfo.hLines[Math.round(val * originInfo.unit)];
         setHLines(lines);
         break;
 
@@ -808,7 +816,7 @@ export default function EditorPanel(props) {
 
       case 'v': {
         const lines = vLines.filter(item => item != val);
-        delete originInfo.current.vLines[Math.round(val * originInfo.current.unit)];
+        delete originInfo.vLines[Math.round(val * originInfo.unit)];
         setVLines(lines);
         break;
 
@@ -821,12 +829,12 @@ export default function EditorPanel(props) {
   }
 
   // 移动参考线
-  function handleLineDragEnd(pre, suf, type) {
+  function handleLineDragEnd(pre: number, suf: number, type: string) {
     switch (type) {
       case 'h': {
         const lines = hLines.filter(item => item != pre);
-        delete originInfo.current.hLines[Math.round(pre * originInfo.current.unit)];
-        originInfo.current.hLines[Math.round(suf * originInfo.current.unit)] = 1;
+        delete originInfo.hLines[Math.round(pre * originInfo.unit)];
+        originInfo.hLines[Math.round(suf * originInfo.unit)] = 1;
         lines.push(suf);
         setHLines(lines);
         break;
@@ -835,8 +843,8 @@ export default function EditorPanel(props) {
 
       case 'v': {
         const lines = vLines.filter(item => item != pre);
-        delete originInfo.current.vLines[Math.round(pre * originInfo.current.unit)];
-        originInfo.current.vLines[Math.round(suf * originInfo.current.unit)] = 1;
+        delete originInfo.vLines[Math.round(pre * originInfo.unit)];
+        originInfo.vLines[Math.round(suf * originInfo.unit)] = 1;
         lines.push(suf);
         setVLines(lines);
         break;
@@ -849,47 +857,47 @@ export default function EditorPanel(props) {
     }
   }
 
-  function changeZoom(value) {
-    const val = value < originInfo.current.minScale ? originInfo.current.minScale :
-      value > originInfo.current.maxScale ? originInfo.current.maxScale : value;
+  function changeZoom(value: number) {
+    const val = value < originInfo.minScale ? originInfo.minScale :
+      value > originInfo.maxScale ? originInfo.maxScale : value;
     const [_zoom_, tolerance] = getChangeLine(val)
 
     const _zoom = 100 / _zoom_
-    const _lineMargin = defaultSetting.current.lineMargin * (100 + tolerance) / 100;
+    const _lineMargin = defaultSetting.lineMargin * (100 + tolerance) / 100;
     // console.log('_zoom', _zoom, '_lm', _lineMargin);
 
-    let unit = defaultSetting.current.precision * _zoom / _lineMargin;
-    // console.log('or', originInfo.current.unit);
+    let unit = defaultSetting.precision * _zoom / _lineMargin;
+    // console.log('or', originInfo.unit);
 
     // page 页面缩放
     const pageScaleZoom = 1 / unit;
 
     // 缩略图缩放
-    // const thumbnail_zoom_width = (wpRef.current.clientWidth - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom)
-    //   / (defaultSetting.current.screenWidth * pageScaleZoom);
+    // const thumbnail_zoom_width = (wpRef.clientWidth - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom)
+    //   / (defaultSetting.screenWidth * pageScaleZoom);
 
-    // const thumbnail_zoom_height = (wpRef.current.clientHeight - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom)
-    //   / (defaultSetting.current.screenHeight * pageScaleZoom);
+    // const thumbnail_zoom_height = (wpRef.clientHeight - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom)
+    //   / (defaultSetting.screenHeight * pageScaleZoom);
 
-    // const thumbnail_zoom_width = (wpRef.current.clientWidth - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom)
-    //   / (defaultSetting.current.screenWidth * val / 100);
+    // const thumbnail_zoom_width = (wpRef.clientWidth - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom)
+    //   / (defaultSetting.screenWidth * val / 100);
 
-    // const thumbnail_zoom_height = (wpRef.current.clientHeight - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom)
-    //   / (defaultSetting.current.screenHeight * val / 100);
+    // const thumbnail_zoom_height = (wpRef.clientHeight - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom)
+    //   / (defaultSetting.screenHeight * val / 100);
 
     // console.log('thumbnail_zoom', thumbnail_zoom_width, thumbnail_zoom_height);
 
     // 便于在 mousewheel 回调中拿到最新值
-    originInfo.current.zoom = val;
+    originInfo.zoom = val;
 
-    let transform_ratio = originInfo.current.unit / unit;
-    originInfo.current.zoomPageHeight = defaultSetting.current.screenHeight * pageScaleZoom;
-    originInfo.current.zoomPageWidth = defaultSetting.current.screenWidth * pageScaleZoom;
-    // console.log(originInfo.current.transformX);
-    originInfo.current.transformX *= transform_ratio;
-    originInfo.current.transformY *= transform_ratio;
-    originInfo.current.unit = unit;
-    // console.log(originInfo.current.transformX);
+    let transform_ratio = originInfo.unit / unit;
+    originInfo.zoomPageHeight = defaultSetting.screenHeight * pageScaleZoom;
+    originInfo.zoomPageWidth = defaultSetting.screenWidth * pageScaleZoom;
+    // console.log(originInfo.transformX);
+    originInfo.transformX *= transform_ratio;
+    originInfo.transformY *= transform_ratio;
+    originInfo.unit = unit;
+    // console.log(originInfo.transformX);
 
     transformDoc();
 
@@ -897,21 +905,21 @@ export default function EditorPanel(props) {
     setInputZoom(val);
     // setThumbnailZoom([thumbnail_zoom_width > 1 ? 1 : thumbnail_zoom_width, thumbnail_zoom_height > 1 ? 1 : thumbnail_zoom_height]);
 
-    props.onChangeZoom && props.onChangeZoom({
+    props.onChangeZoom?.({
       zoom: value,
-      unit: originInfo.current.unit
+      unit: originInfo.unit
     });
 
   }
 
-  function selectZoom(val) {
+  function selectZoom(val: number) {
     if (wpRef.current == null) return;
     if (val !== -1) {
       changeZoom(val);
     } else { // 自适应调整
-      // console.log('default', defaultSetting.current);
-      let widthRatio = (wpRef.current.clientWidth - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom) / defaultSetting.current.screenWidth;
-      let heightRatio = (wpRef.current.clientHeight - defaultSetting.current.startMarginZoom - defaultSetting.current.scaleHeightZoom) / defaultSetting.current.screenHeight;
+      // console.log('default', defaultSetting);
+      let widthRatio = (wpRef.current.clientWidth - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom) / defaultSetting.screenWidth;
+      let heightRatio = (wpRef.current.clientHeight - defaultSetting.startMarginZoom - defaultSetting.scaleHeightZoom) / defaultSetting.screenHeight;
       // console.log('ratio', widthRatio, heightRatio);
       let side = widthRatio > heightRatio ? heightRatio : widthRatio;
       changeZoom(Math.round((side * 100 - 3)));
@@ -920,18 +928,18 @@ export default function EditorPanel(props) {
   }
 
   // function handleThumbnailMove(val) {
-  //   // console.log(originInfo.current.unit);
-  //   pageRef.current.style.transform =
-  //     `scale(${1 / originInfo.current.unit}) translate(-${(val.transformX) * 10}px,-${val.transformY * 10 * originInfo.current.unit}px)`;
-  //   hWpRuler.current.style.transform = `translateX(-${val.transformX * 10 / originInfo.current.unit}px`;
-  //   vWpRuler.current.style.transform = `rotate(90deg) translateX(-${val.transformY * 10}px`;
+  //   // console.log(originInfo.unit);
+  //   pageRef.style.transform =
+  //     `scale(${1 / originInfo.unit}) translate(-${(val.transformX) * 10}px,-${val.transformY * 10 * originInfo.unit}px)`;
+  //   hWpRuler.style.transform = `translateX(-${val.transformX * 10 / originInfo.unit}px`;
+  //   vWpRuler.style.transform = `rotate(90deg) translateX(-${val.transformY * 10}px`;
   // }
 
   // function handleThumbnailMoveEnd(val) {
-  //   pageRef.current.style.transition = '.2s all linear';
-  //   // pageRef.current.style.transformOrigin = `${val.transformX * 10}px ${val.transformY * 10}px`;
-  //   originInfo.current.transformX = val.transformX * 10 / originInfo.current.unit;
-  //   originInfo.current.transformY = val.transformY * 10;
+  //   pageRef.style.transition = '.2s all linear';
+  //   // pageRef.style.transformOrigin = `${val.transformX * 10}px ${val.transformY * 10}px`;
+  //   originInfo.transformX = val.transformX * 10 / originInfo.unit;
+  //   originInfo.transformY = val.transformY * 10;
   //   setHLines([...hLines]);
   //   setVLines([...vLines]);
   // }
@@ -940,17 +948,17 @@ export default function EditorPanel(props) {
     hLines.map(item => <Line key={item}
       type="h"
       setting={{
-        startMargin: defaultSetting.current.startMarginZoom,
-        leftOffset: originInfo.current.leftOffset,
-        topOffset: originInfo.current.topOffset,
-        transformX: originInfo.current.transformX,
+        startMargin: defaultSetting.startMarginZoom,
+        leftOffset: originInfo.leftOffset,
+        topOffset: originInfo.topOffset,
+        transformX: originInfo.transformX,
       }}
-      unit={originInfo.current.unit}
+      unit={originInfo.unit}
       left={item}
       disable={!showLine}
-      top={defaultSetting.current.scaleHeightZoom}
+      top={defaultSetting.scaleHeightZoom}
       onDoubleClick={() => handleLineDBClick(item, 'h')}
-      onDragEnd={(v) => handleLineDragEnd(item, v, 'h')}
+      onDragEnd={(v: any) => handleLineDragEnd(item, v, 'h')}
     />)
     , [hLines, zoom, showLine, refreshTrigger]);
 
@@ -958,21 +966,21 @@ export default function EditorPanel(props) {
     vLines.map(item => <Line key={item}
       type="v"
       setting={{
-        startMargin: defaultSetting.current.startMarginZoom,
-        leftOffset: originInfo.current.leftOffset,
-        topOffset: originInfo.current.topOffset,
-        transformY: originInfo.current.transformY,
+        startMargin: defaultSetting.startMarginZoom,
+        leftOffset: originInfo.leftOffset,
+        topOffset: originInfo.topOffset,
+        transformY: originInfo.transformY,
       }}
-      unit={originInfo.current.unit}
+      unit={originInfo.unit}
       left={item}
       disable={!showLine}
       onDoubleClick={() => handleLineDBClick(item, 'v')}
-      onDragEnd={(v) => handleLineDragEnd(item, v, 'v')}
+      onDragEnd={(v: any) => handleLineDragEnd(item, v, 'v')}
     />)
     , [vLines, zoom, showLine, refreshTrigger]);
 
   const scaleLevel = (
-    <ul className="scale-value-list" onClick={(e) => selectZoom(e.target.value)}>
+    <ul className="scale-value-list" onClick={(e) => selectZoom(e.target['value'])}>
       <li value={200}>200%</li>
       <li value={150}>150%</li>
       <li value={100}>100%</li>
@@ -983,7 +991,7 @@ export default function EditorPanel(props) {
 
   const sliderNode = useMemo(() => <div className="zoom-slider">
     <MinusOutlined className="zoom-icon zoom-out" onClick={() => changeZoom(zoom - 17)} />
-    <Slider value={zoom} onChange={changeZoom} max={originInfo.current.maxScale} min={originInfo.current.minScale} step={17} />
+    <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} />
     <PlusOutlined className="zoom-icon zoom-in" onClick={() => changeZoom(zoom + 17)} />
   </div>, [zoom]);
 
@@ -996,18 +1004,18 @@ export default function EditorPanel(props) {
               id='rulerT'
               ref={hWpRuler}
               style={{
-                height: defaultSetting.current.scaleHeightZoom,
-                left: defaultSetting.current.scaleHeightZoom + 'px'
+                height: defaultSetting.scaleHeightZoom,
+                left: defaultSetting.scaleHeightZoom + 'px'
               }}
             >
               <Ruler
-                defaultSetting={defaultSetting.current}
+                setting={defaultSetting}
                 zoom={zoom}
-                pageZoom={1 / originInfo.current.unit}
-                onMouseEnter={(e) => handleMouseEnter(e, 'h')}
-                onMouseLeave={(e) => handleMouseLeave(e, 'h')}
-                onMouseMove={(e) => handleMouseMove(e, 'h')}
-                onClick={(e) => handleRulerClick(e, 'h')}
+                pageZoom={1 / originInfo.unit}
+                onMouseEnter={(e: any) => handleMouseEnter(e, 'h')}
+                onMouseLeave={(e: any) => handleMouseLeave(e, 'h')}
+                onMouseMove={(e: any) => handleMouseMove(e, 'h')}
+                onClick={(e: any) => handleRulerClick(e, 'h')}
               />
               <div className="lines-wp">
                 {hLineNodes}
@@ -1024,15 +1032,15 @@ export default function EditorPanel(props) {
             <div className="ruler-wp vertical"
               id='rulerL'
               ref={vWpRuler}
-              style={{ height: defaultSetting.current.scaleHeightZoom }}>
+              style={{ height: defaultSetting.scaleHeightZoom }}>
               <Ruler
-                defaultSetting={defaultSetting.current}
+                setting={defaultSetting}
                 zoom={zoom}
-                pageZoom={1 / originInfo.current.unit}
-                onMouseEnter={(e) => handleMouseEnter(e, 'v')}
-                onMouseLeave={(e) => handleMouseLeave(e, 'v')}
-                onMouseMove={(e) => handleMouseMove(e, 'v')}
-                onClick={(e) => handleRulerClick(e, 'v')}
+                pageZoom={1 / originInfo.unit}
+                onMouseEnter={(e: any) => handleMouseEnter(e, 'v')}
+                onMouseLeave={(e: any) => handleMouseLeave(e, 'v')}
+                onMouseMove={(e: any) => handleMouseMove(e, 'v')}
+                onClick={(e: any) => handleRulerClick(e, 'v')}
               />
               <div className="lines-wp">
                 {vLineNodes}
@@ -1047,8 +1055,8 @@ export default function EditorPanel(props) {
               }
             </div>
             <div className="viewer-toggle" style={{
-              width: defaultSetting.current.scaleHeightZoom,
-              height: defaultSetting.current.scaleHeightZoom
+              width: defaultSetting.scaleHeightZoom,
+              height: defaultSetting.scaleHeightZoom
             }}
               title={showLine ? '隐藏辅助线' : '显示辅助线'}
               onClick={() => changeShowLine(!showLine)}
@@ -1060,12 +1068,12 @@ export default function EditorPanel(props) {
             style={{
               width: isNaN(screenWidth) ? 0 : screenWidth,
               height: isNaN(screenHeight) ? 0 : screenHeight,
-              top: (defaultSetting.current.scaleHeightZoom + defaultSetting.current.startMarginZoom) + 'px',
-              left: (defaultSetting.current.scaleHeightZoom + defaultSetting.current.startMarginZoom) + 'px',
+              top: (defaultSetting.scaleHeightZoom + defaultSetting.startMarginZoom) + 'px',
+              left: (defaultSetting.scaleHeightZoom + defaultSetting.startMarginZoom) + 'px',
               backgroundColor: screenBGColor,
               backgroundImage: screenBG ? `url(${screenBG})` : '',
             }}
-          // onMoveStart={() => pageRef.current.style.transition = 'none'}
+          // onMoveStart={() => pageRef.style.transition = 'none'}
           // onMove={handleThumbnailMove}
           // onMoveEnd={handleThumbnailMoveEnd}
           >
@@ -1085,7 +1093,7 @@ export default function EditorPanel(props) {
           width={screenWidth}
           height={screenHeight}
           zoom={screenWidth / 1920 * 10}
-          // onMoveStart={() => pageRef.current.style.transition = 'none'}
+          // onMoveStart={() => pageRef.style.transition = 'none'}
           // onMove={handleThumbnailMove}
           // onMoveEnd={handleThumbnailMoveEnd}
           bgColor={screenBGColor}
@@ -1095,12 +1103,12 @@ export default function EditorPanel(props) {
           <div className="scale-leval-input-wp">
             <input type="number"
               className="scale-input"
-              max={originInfo.current.maxScale}
-              min={originInfo.current.minScale}
+              max={originInfo.maxScale}
+              min={originInfo.minScale}
               step={1}
               value={inputZoom}
-              onChange={(e) => setInputZoom(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && changeZoom(e.target.value)}
+              onChange={(e) => setInputZoom(parseFloat(e.target.value))}
+              onKeyDown={(e) => e.key === 'Enter' && changeZoom(e.target['value'])}
             />
             <Popover
               overlayClassName="zoom-selected-wp"

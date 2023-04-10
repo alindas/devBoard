@@ -1,12 +1,13 @@
 
 import React, { useCallback, useEffect, useRef } from "react"
 
-import { getChangeLine } from './index.jsx'
+import { getChangeLine } from '.'
+import { IRuler, TRulerInfo } from "./interface"
 
 const MARK_LINE_COLOR = '#3a4659'
 const MARK_NUMBER_COLOR = '#90a0ae'
 
-const Ruler = (props) => {
+const Ruler = (props: IRuler) => {
   const {
     onMouseEnter,
     onMouseLeave,
@@ -36,17 +37,11 @@ const Ruler = (props) => {
     /** 面板高度 */
     screenHeight,
 
-  } = props.defaultSetting;
+  } = props.setting;
 
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const originCanvasInfo = useRef({
-    originCanvasWidth:0,
-    originCanvasHeight:0,
-    dprOrginCanvasWidth:0,
-    dprOriginCanvasHeight:0,
-    dpr:0
-  })
+  let originCanvasInfo = useRef<TRulerInfo|null>(null).current
 
   /** 绘制背景色和底线 */
   const drawBackGroundUnderLine = (tempCanvas,tempContext) =>{
@@ -63,22 +58,23 @@ const Ruler = (props) => {
 
   /** 绘制刻度线 */
   const drawScale = (useCallback(() =>{
+    if(originCanvasInfo === null) return
+
     const {
       context,
       originCanvasWidth,
       originCanvasHeight,
-      dprOrginCanvasWidth,
+      dprOriginCanvasWidth,
       dprOriginCanvasHeight,
       dpr
-    } = originCanvasInfo.current
+    } = originCanvasInfo
 
     // console.log(originCanvasInfo.current);
 
-    if(!context) return
     let tempCanvas = document.createElement('canvas')
     let tempContext = tempCanvas.getContext('2d')
 
-    tempCanvas.width = dprOrginCanvasWidth
+    tempCanvas.width = dprOriginCanvasWidth
     tempCanvas.height = dprOriginCanvasHeight
     tempContext.scale(dpr,dpr)
 
@@ -121,7 +117,7 @@ const Ruler = (props) => {
     }
 
     context.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
-    context.drawImage(tempCanvas, 0, 0, dprOrginCanvasWidth,dprOriginCanvasHeight, 0, 0, originCanvasWidth, originCanvasHeight)
+    context.drawImage(tempCanvas, 0, 0, dprOriginCanvasWidth, dprOriginCanvasHeight, 0, 0, originCanvasWidth, originCanvasHeight)
 
   },[zoom]))
 
@@ -142,12 +138,11 @@ const Ruler = (props) => {
 
       // console.log(width);
       /** 设置当前值 */
-      originCanvasInfo.current = {
-        canvas,
+      originCanvasInfo = {
         context,
         originCanvasWidth: width,
         originCanvasHeight: scaleHeight,
-        dprOrginCanvasWidth: dpr * width,
+        dprOriginCanvasWidth: dpr * width,
         dprOriginCanvasHeight: dpr * scaleHeight,
         dpr
       }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { ILine } from './interface';
 
-export default function Line(props) {
+export default function Line(props: ILine) {
   // console.log(props);
   const {
     startMargin,
@@ -21,12 +22,12 @@ export default function Line(props) {
   }, [props.unit])
 
   function onMouseDown() {
-    window.onmousemove = function(e) {
+    window.onmousemove = function(e: MouseEvent) {
       setPos(props.type == 'h' ? e.clientX - transformX - leftOffset : e.clientY - transformY - topOffset);
 
     }
 
-    window.onmouseup = function(e) {
+    window.onmouseup = function(e: MouseEvent) {
       props.onDragEnd(props.type == 'h' ? e.clientX - transformX - leftOffset - startMargin
         : e.clientY - transformY - topOffset - startMargin);
       window.onmousemove = null;

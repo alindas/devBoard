@@ -50,24 +50,6 @@ module.exports = {
         use: ['style-loader', 'css-loader']
       },
       {
-        test: /\.less$/,
-        // 使 node_modules 第三方包中没有使用 css modules 的包也正常运行
-        exclude: [/node_modules/],
-        use: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              modules: {
-                mode: 'local',
-                localIdentName: '[local]___[hash:base64:5]'
-              },
-            }
-          },
-          'less-loader'
-        ]
-      },
-      {
         test: /\.(js|mjs|jsx)$/,
         exclude: /node_modules/,
         use: {
