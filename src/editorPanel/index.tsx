@@ -79,16 +79,16 @@ const DEFAULT_SET = {
   zoomMode: '',
 }
 
-
+let Shaking: NodeJS.Timeout; // 辅助线显示防抖开关
 
 export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   const {
     enableDrag = true,
     enableLineHelper = false,
-    screenWidth,
-    screenHeight,
-    screenBGColor,
+    screenWidth = DEFAULT_SET.screenWidth,
+    screenHeight = DEFAULT_SET.screenHeight,
+    screenBGColor = DEFAULT_SET.screenBGColor,
     screenBG,
     zoom: inheritZoom,
     makeCustomized,
@@ -121,13 +121,14 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   const vRulerValue = useRef<HTMLSpanElement>(null);
   const lineHelperRef = useRef<HTMLCanvasElement>(null); // 对齐辅助线 canvas
 
-  // 可通过外部传入的数据
+  // 基本面板信息
   let defaultSetting = useRef<IDefaultSet>({
     ...DEFAULT_SET,
-    ...props,
+    screenWidth,
+    screenHeight,
   }).current;
 
-  // 用于自身调整值
+  // 用于自身功能逻辑访问
   const originInfo = useRef<TOriginInfo>({
 
     firstMounted: true,
@@ -457,7 +458,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
         }
 
       })
-
       if (left != -1 || top != -1) {
 
         end = false;
@@ -650,11 +650,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   }, [enableLineHelper])
 
-  // 控制第一次挂载
-  // useEffect(() => {
-  //   // originInfo.firstMounted = false;
-  // }, [])
-
   function updateSize() {
     if (wpRef.current == null) return;
     if (zoom >= 18 || zoom <= 200) {
@@ -684,13 +679,21 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
     // console.log(defaultSetting);
     switch (type) {
       case 'h': {
-        setHIndicator(true);
-        Promise.resolve().then(() => {
-          hRuler.current.setAttribute('style', `left: ${e.clientX - originInfo.leftOffset}px; transform: translateY(${defaultSetting.scaleHeight}px)`);
+        // 延迟显示，减少快速划过的闪烁
+        Shaking = setTimeout(() => {
+          Shaking = undefined;
+          if (typeof Shaking === 'undefined') {
+            setHIndicator(true);
+            const leftOffset = e.clientX - originInfo.transformX - originInfo.leftOffset;
+            hRuler.current.setAttribute('style', `left: ${e.clientX - originInfo.leftOffset}px; transform: translateY(${defaultSetting.scaleHeight}px)`);
+            hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
-        });
+            // Promise.resolve().then(() => {
+            //   console.log(3)
+            // });
+          }
+        }, 120)
         break;
-
       }
 
       case 'v': {
@@ -713,6 +716,9 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   function handleMouseLeave(e: any, type = 'h') {
     switch (type) {
       case 'h': {
+        if (typeof Shaking !== 'undefined') {
+          clearTimeout(Shaking);
+        }
         setHIndicator(false);
         break;
 
@@ -739,8 +745,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
           hRuler.current.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.scaleHeightZoom}px)`);
           hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
-        } else {
-          setHIndicator(true);
         }
         break;
 
@@ -779,7 +783,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
         originInfo.hLines[Math.round(realPos * originInfo.unit)] = 1;
 
         setHLines(lines);
-        setHIndicator(false);
+        // setHIndicator(false);
         break;
 
       }
