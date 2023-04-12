@@ -1,0 +1,30 @@
+.demo-wp {
+  width: 80vw;
+  height: 60vh;
+}
+
+.cp-list {
+  padding: 8px 10px;
+  margin-bottom: 1em;
+  background-color: #f1f1f1;
+}
+
+.cp-list ul {
+  display: flex;
+}
+
+.cp-list li {
+  margin: 0 1em;
+  width: 100px;
+  height: 100px;
+  background-color: #ccc;
+  user-select: none;
+}
+
+.composer-wp {
+  position: relative;
+}
+
+.composer-wp > div {
+  position: absolute;
+}
