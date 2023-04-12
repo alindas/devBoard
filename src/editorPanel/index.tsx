@@ -1,5 +1,6 @@
-import React, { useState, useRef, useMemo, useEffect, useLayoutEffect, WheelEvent } from 'react';
-import { Popover, Slider } from 'antd';
+import React, { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
+import Popover from '../popover';
+import Slider from '../slider';
 import {
   MinusOutlined,
   PlusOutlined,
@@ -7,7 +8,7 @@ import {
   CaretUpOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
-} from '@ant-design/icons';
+} from './asset/icons'
 
 import IEditorPanel, { IDefaultSet, TOriginInfo } from './interface'
 import './index.css';
@@ -97,7 +98,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   const [zoom, setZoom] = useState(100); // 缩放大小，limit 18 to 200
   const [inputZoom, setInputZoom] = useState(100);
   // const [thumbnailZoom, setThumbnailZoom] = useState([1, 1]);
-  const [showScaleLevel, changeShowScaleLevel] = useState(false); // 缩放大小开关
   const [showThumbnail, changeShowThumbnail] = useState(true); // 缩略图开关
   const [showLine, changeShowLine] = useState(true); // 是否显示参考线
   const [refreshTrigger, changeRefreshTrigger] = useState(0); // 参考线刷新扳机
@@ -924,7 +924,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       let side = widthRatio > heightRatio ? heightRatio : widthRatio;
       changeZoom(Math.round((side * 100 - 3)));
     }
-    changeShowScaleLevel(false);
   }
 
   // function handleThumbnailMove(val) {
@@ -991,7 +990,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   const sliderNode = useMemo(() => <div className="zoom-slider">
     <MinusOutlined className="zoom-icon zoom-out" onClick={() => changeZoom(zoom - 17)} />
-    <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} />
+    {/* <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} /> */}
     <PlusOutlined className="zoom-icon zoom-in" onClick={() => changeZoom(zoom + 17)} />
   </div>, [zoom]);
 
@@ -1111,13 +1110,9 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
               onKeyDown={(e) => e.key === 'Enter' && changeZoom(e.target['value'])}
             />
             <Popover
-              overlayClassName="zoom-selected-wp"
               content={scaleLevel}
-              trigger="click"
-              visible={showScaleLevel}
-              onVisibleChange={changeShowScaleLevel}
             >
-              <span className="percent" onClick={() => changeShowScaleLevel(!showScaleLevel)}>%<CaretUpOutlined /></span>
+              <span className="percent">%<CaretUpOutlined /></span>
             </Popover>
           </div>
           {sliderNode}

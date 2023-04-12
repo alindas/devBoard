@@ -153,13 +153,14 @@
   width: 64px;
   background: #262c33;
   border: 1px solid #0b0c0d;
-  overflow: hidden;
+  /* overflow: hidden; */
   cursor: pointer;
 }
 
 .scale-input {
   font-size: 10px;
   padding: 5px;
+  color: #bcc9d4;
   caret-color: #bcc9d4;
   background: 0 0;
   width: 32px;
@@ -182,14 +183,6 @@ input[type="number"] {
 
 .percent {
   margin-left: 1px;
-}
-
-.zoom-selected-wp .ant-popover-inner-content {
-  padding: 0;
-}
-
-.zoom-selected-wp .ant-popover-arrow {
-  display: none;
 }
 
 .scale-value-list {
@@ -292,6 +285,19 @@ input[type="number"] {
   top: 0;
   left: 0;
   background-color: transparent;
+}
+
+.anticon {
+  display: inline-block;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: -0.125em;
+  text-rendering: optimizelegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 

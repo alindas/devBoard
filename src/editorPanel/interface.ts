@@ -17,8 +17,8 @@ export default interface IEditorPanel {
   screenBGColor: string,
   screenBG: string,
   zoom: number,
-  makeCustomized: [],
-  dragTarget: [],
+  makeCustomized: TDragPos[],
+  dragTarget: TDragPos,
   children: React.ReactNode,
   onDragEnd: (pos: dropPos, trigger: boolean) => void,
   onChasingLine: (pos: { left: number, top: number }) => void,
@@ -33,6 +33,13 @@ export interface IDefaultSet extends Partial<IEditorPanel> {
   zoomMode: string,
   hc?: number,
   vc?: number
+}
+
+export type TDragPos = {
+  left: number,
+  top: number,
+  width: number,
+  height: number
 }
 
 export type TOriginInfo = {
@@ -55,8 +62,8 @@ export type TOriginInfo = {
   enableLineHelper: boolean,
   vLines: {[k: string]: 1}, // 方便拖拽组件时对齐
   hLines: {[k: string]: 1},
-  domList?: any,
-  dragTarget?: any,
+  domList?: TDragPos[],
+  dragTarget?: TDragPos,
   originalDragTarget?: any
 }
 

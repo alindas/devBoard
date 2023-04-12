@@ -1,11 +1,12 @@
 import React from 'react'
 import EditorPanel from "./editorPanel";
+import Demo from './demo/basic';
 
 function App() {
 
   return (
     <div>
-      <div style={{height: '100vh', padding: '10rem'}}><EditorPanel /></div>
+      <div style={{height: '100vh', padding: '3rem'}}><Demo /></div>
     </div>
   );
 }
