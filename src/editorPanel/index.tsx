@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
 import Popover from '../popover';
-import Slider from '../slider';
+import Slider from 'rc-slider';
 import {
   MinusOutlined,
   PlusOutlined,
@@ -990,7 +990,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   const sliderNode = useMemo(() => <div className="zoom-slider">
     <MinusOutlined className="zoom-icon zoom-out" onClick={() => changeZoom(zoom - 17)} />
-    {/* <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} /> */}
+    <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} />
     <PlusOutlined className="zoom-icon zoom-in" onClick={() => changeZoom(zoom + 17)} />
   </div>, [zoom]);
 

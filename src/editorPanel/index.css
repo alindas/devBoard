@@ -227,20 +227,26 @@ input[type="number"] {
   cursor: zoom-in;
 }
 
-.zoom-slider .ant-slider {
+.zoom-slider .rc-slider {
+  position: relative;
   flex: 1;
+  height: 7px;
 }
 
-.ant-slider-track,
-.ant-slider:hover .ant-slider-track {
+.rc-slider-track,
+.rc-slider:hover .rc-slider-track {
+  height: 100%;
   background: linear-gradient(to right, rgb(0, 251, 255), rgb(0, 176, 255) 10%, rgb(38, 42, 53) 111.111%, rgb(38, 42, 53));
 }
 
-.ant-slider-handle {
+.rc-slider-handle {
+  position: absolute;
   width: 10px;
   height: 10px;
-  margin-top: -3px;
-  border-width: 1px;
+  top: -1px;
+  border: 1px solid #0cdce8;
+  border-radius: 5px;
+  background-color: #fff;
 }
 
 .toggle-thumbnail {
