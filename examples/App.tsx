@@ -1,6 +1,5 @@
 import React from 'react'
-import EditorPanel from "./editorPanel";
-import Demo from './demo/basic';
+import Demo from './src/basic';
 
 function App() {
 

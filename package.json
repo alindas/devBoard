@@ -1,11 +1,25 @@
 {
   "name": "opspiper",
   "version": "1.0.0",
-  "description": "开发面板",
-  "main": "index.tsx",
+  "description": "React低代码开发面板",
+  "keywords": [
+    "react",
+    "react-component",
+    "low-code",
+    "editor",
+    "sdk"
+  ],
+  "main": "index.ts",
+  "files": ["lib"],
+  "homepage": "https://github.com/alindas/devBoard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alindas/devBoard.git"
+  },
   "scripts": {
     "start": "webpack serve --mode=development",
-    "build": "webpack --mode=production"
+    "build": "webpack ",
+    "compile": "babel src --out-dir lib --copy-files"
   },
   "author": "lhh",
   "license": "ISC",
@@ -15,8 +29,8 @@
     "react-dom": "^17.0.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.17.8",
-    "@babel/preset-env": "^7.16.11",
+    "@babel/cli": "^7.21.0",
+    "@babel/core": "^7.21.4",
     "@babel/preset-react": "^7.18.6",
     "@types/react": "^18.0.34",
     "@types/react-dom": "^18.0.11",

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "./",
-    "outDir": "./",
+    "outDir": "./build",
     "module": "es2015",
     "target": "es5",
     "lib": ["dom","dom.iterable","esnext"],
@@ -17,7 +17,7 @@
     }
   },
   "include": [
-    "src/*",
+    "src/*", "examples",
   ],
   "exclude": [
     "node_modules",

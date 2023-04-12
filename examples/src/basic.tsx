@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import EditorPanel from "../editorPanel";
+import EditorPanel from "../../src/editorPanel";
 import './demo.css'
 
 const CPListData = [

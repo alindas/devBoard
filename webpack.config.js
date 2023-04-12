@@ -4,10 +4,10 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: resolve('src/index.tsx'),
+  entry: './examples/index.tsx',
   output: {
-    path: resolve('dist'),
-    filename: 'app.js',
+    path: resolve('lib'),
+    filename: '[name].js',
     publicPath: "/"
   },
   resolve: {
@@ -65,11 +65,11 @@ module.exports = {
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      template: resolve('public/index.html'),
-      favicon: resolve('public/favicon.ico')
+      template: resolve('examples/public/index.html'),
+      favicon: resolve('examples/public/favicon.ico')
     }),
   ],
   devServer: {
-    static: path.join('public'),
+    static: path.join('examples/public'),
   }
 }
