@@ -1,15 +1,16 @@
 {
-  "name": "opspiper",
+  "name": "react-lc-panel",
   "version": "1.0.0",
   "description": "React低代码开发面板",
   "keywords": [
-    "react",
     "react-component",
     "low-code",
     "editor",
+    "panel",
+    "panel board",
     "sdk"
   ],
-  "main": "index.ts",
+  "main": "lib/index.ts",
   "files": [
     "lib"
   ],
@@ -21,7 +22,7 @@
   "scripts": {
     "start": "webpack serve --mode=development",
     "build": "webpack ",
-    "compile": "babel src --out-dir lib --copy-files",
+    "compile": "babel src --out-dir lib",
     "deploy": "gh-pages -d dist"
   },
   "author": "lhh",
