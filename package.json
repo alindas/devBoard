@@ -10,7 +10,9 @@
     "sdk"
   ],
   "main": "index.ts",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
   "homepage": "https://github.com/alindas/devBoard",
   "repository": {
     "type": "git",
@@ -19,7 +21,8 @@
   "scripts": {
     "start": "webpack serve --mode=development",
     "build": "webpack ",
-    "compile": "babel src --out-dir lib --copy-files"
+    "compile": "babel src --out-dir lib --copy-files",
+    "deploy": "gh-pages -d dist"
   },
   "author": "lhh",
   "license": "ISC",
@@ -37,6 +40,7 @@
     "babel-loader": "^8.2.4",
     "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^6.7.1",
+    "gh-pages": "^5.0.0",
     "html-webpack-plugin": "^5.5.0",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.2.8",

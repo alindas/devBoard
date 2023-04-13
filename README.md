@@ -4,7 +4,7 @@
 
 用于构建二次开发场景的组件配装面板。支持 React。
 
-![](public/img/Snipaste.png)
+![](examples/public/img/Snipaste.png)
 
 ### 文档
 
@@ -49,5 +49,5 @@ function App() {
 
 通过 `npm` start 本地运行并访问 http://localhost:8080/
 
-Online example: 
+Online example:
 
