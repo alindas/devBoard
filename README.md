@@ -11,18 +11,18 @@
 #### 安装使用
 
 ```bash
-npm install opspiper
+npm install react-lc-panel
 or
-yarn add opspiper
+yarn add react-lc-panel
 ```
 
 
 
 ```tsx
-Import Opspiper from 'opspiper';
+Import Panel from 'react-lc-panel';
 
 function App() {
-	return <Opspiper />
+	return <Panel />
 }
 ```
 
