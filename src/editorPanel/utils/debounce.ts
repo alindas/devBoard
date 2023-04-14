@@ -62,7 +62,14 @@ import root from './internal/root.js'
  * // Check for pending invocations.
  * const status = debounced.pending() ? "Pending..." : "Ready"
  */
-export default function debounce(func, wait, options) {
+
+type Options = {
+  leading: boolean,
+  maxWait: number,
+  trailing: boolean
+}
+
+export default function debounce(func: Function, wait: number, options?: Partial<Options>) {
   let lastArgs,
     lastThis,
     maxWait,
