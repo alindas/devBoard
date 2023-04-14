@@ -1,7 +1,7 @@
 
 import React, { useCallback, useEffect, useRef } from "react"
 
-import { getChangeLine } from '.'
+import { getChangeLine } from './utils/getChangeLine'
 import { IRuler, TRulerInfo } from "./interface"
 
 const MARK_LINE_COLOR = '#3a4659'

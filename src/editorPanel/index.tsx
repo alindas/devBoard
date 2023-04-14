@@ -15,34 +15,11 @@ import './index.css';
 import Ruler from './Ruler';
 import Line from './Line';
 import Thumbnail from './Thumbnail';
-import debounce from './utils/debounce.js';
-import throttle from './utils/throttle.js';
+import debounce from './utils/debounce';
+import throttle from './utils/throttle';
 import { checkOffset } from './utils/checkOffset';
 import { drawLine } from './utils/drawLine';
-
-export function getChangeLine(val: number) {
-  if (val < 20) {
-    return [20, 0]
-
-  } else if (val >= 20 && val < 40) {
-    return [20, (val - 20) * 5]
-
-  } else if (val >= 40 && val < 80) {
-    return [40, (val - 40) * 2.5]
-
-  } else if (val >= 80 && val < 100) {
-    return [80, (val - 80) * 1.25]
-
-  } else if (val >= 100 && val < 125) {
-    return [100, val - 100]
-
-  } else if (val >= 125) {
-    return [125, (val - 125) * 1.333334]
-
-  } else {
-    return [200, 0]
-  }
-}
+import { getChangeLine } from './utils/getChangeLine';
 
 const DEFAULT_SET = {
   /** 尺子高度 */
