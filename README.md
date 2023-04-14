@@ -51,3 +51,7 @@ function App() {
 
 Online example: https://alindas.github.io/devBoard/
 
+#### 问题
+1. 放大后，面板水平方向的滚动通过按住 `shift` 滚动查看
+2. [其他问题](https://github.com/alindas/devBoard/issues/new)
+
