@@ -26,7 +26,7 @@
     "deploy": "gh-pages -d dist"
   },
   "author": "lhh",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "rc-slider": "^10.1.1",
     "react": "^17.0.2",
