@@ -7,8 +7,8 @@ export default function Line(props: ILine) {
     startMargin,
     leftOffset,
     topOffset,
-    transformX,
-    transformY
+    transformX = 0,
+    transformY = 0
   } = props.setting;
 
   const [pos, setPos] = useState(-100);

@@ -77,9 +77,10 @@ const DEFAULT_SET = {
 
   /** 屏幕缩放模式 */
   zoomMode: '',
+
 }
 
-let Shaking: NodeJS.Timeout; // 辅助线显示防抖开关
+// let Shaking: NodeJS.Timeout; // 辅助线显示防抖开关
 
 export default function EditorPanel(props: Partial<IEditorPanel>) {
 
@@ -107,8 +108,8 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   const [vIndicator, setVIndicator] = useState(false);
 
   // 储存尺子参考线
-  const [hLines, setHLines] = useState([]);
-  const [vLines, setVLines] = useState([]);
+  const [hLines, setHLines] = useState<number[]>([]);
+  const [vLines, setVLines] = useState<number[]>([]);
 
   const wpRef = useRef<HTMLDivElement>(null); // editor 最外层 dom
   const canvasRef = useRef<HTMLDivElement>(null); // canvas 最外层 dom
@@ -124,6 +125,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   // 基本面板信息
   let defaultSetting = useRef<IDefaultSet>({
     ...DEFAULT_SET,
+    scaleHeight: props.scaleHeight??DEFAULT_SET.scaleHeight,
     screenWidth,
     screenHeight,
   }).current;
@@ -133,7 +135,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
     firstMounted: true,
 
-    // clientReact: {},
+    clientReact: {left: 0, top: 0, width: 0, height: 0},
 
     leftOffset: 0, /** 面板距离客户端左侧距离 */
     topOffset: 0,
@@ -179,7 +181,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       selectZoom(-1);
     }, 300);
     const resizeObserver = new ResizeObserver(performanceFn);
-    resizeObserver.observe(wpRef.current);
+    resizeObserver.observe(wpRef.current!);
 
     return () => {
       document.removeEventListener('wheel', scrollTrimming);
@@ -194,7 +196,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   useEffect(() => {
     updateSize();
 
-    wpRef.current.onmousedown = () => {
+    wpRef.current!.onmousedown = () => {
       originInfo.selfClick = true;
     }
 
@@ -231,7 +233,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   // 响应拖拽动作的辅助线条, 鼠标移动过程中接近辅助线时响应
   useEffect(() => {
-    const ctx = lineHelperRef.current.getContext('2d');
+    const ctx = lineHelperRef.current!.getContext('2d')!;
     let end = false;
 
     const checkPos: any = throttle((e: MouseEvent) => {
@@ -264,7 +266,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
         unit,
       } = originInfo;
 
-      const { hc, vc } = defaultSetting;
 
       // console.log('e');
       const offset = 2 * unit;
@@ -274,7 +275,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
       let ex: number, ey: number, ew = 0, eh = 0, left = -1, top = -1;
       ctx.clearRect(0, 0, screenWidth, screenHeight);
-      if (dragTarget == null) { // 从资产库拖入
+      if (typeof dragTarget === 'undefined' || dragTarget == null) { // 从资产库拖入
         ex = Math.round((e.clientX - transformX - leftOffset - startMarginZoom) * unit);
         ey = Math.round((e.clientY - transformY - topOffset - startMarginZoom) * unit);
 
@@ -356,6 +357,8 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       }
 
       ctx.lineWidth = unit;
+      const hc = Math.round(screenWidth / 2); // 水平中心
+      const vc = Math.round(screenHeight / 2); // 垂直中心
 
       if (checkOffset(ex - hc, offset)) { // 左边贴垂直中线
         left = screenWidth / 2;
@@ -391,7 +394,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       // 和其他的组件进行对齐检查
       ctx.setLineDash([5 * unit]);
 
-      domList.forEach((dom: { top: number; left: number; width: number; height: number; }) => {
+      Array.isArray(domList) && domList.forEach((dom: { top: number; left: number; width: number; height: number; }) => {
         let Hit = false;
         if (checkOffset(Math.round(dom.top - ey), offset)) { // 上贴上
           top = dom.top;
@@ -498,7 +501,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   // 监听 ctrl + 滑轮、ctrl + 鼠标左键对画布进行缩放和移动
   useEffect(() => {
 
-    function handleTranslate(e: globalThis.WheelEvent, type: string) {
+    function handleTranslate(e: WheelEvent, type: string) {
       let wheelDelta = type === 'moz' ? -e.detail * 20 : e['wheelDelta'];
       if (e.shiftKey) {
         originInfo.transformX += wheelDelta;
@@ -549,7 +552,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
     }
 
-    function handleWheel(e: globalThis.WheelEvent) {
+    function handleWheel(e: any) {
 
       // 缩放
       if (e.ctrlKey) {
@@ -570,7 +573,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       // console.log(e);
     }
 
-    function handleMOZWheel(e: globalThis.WheelEvent) {
+    function handleMOZWheel(e: any) {
 
       // 缩放
       if (e.ctrlKey) {
@@ -591,9 +594,9 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
     }
 
 
-    wpRef.current.addEventListener('wheel', handleWheel, { passive: false });
-    wpRef.current.addEventListener('mousewheel', handleWheel, { passive: false });
-    wpRef.current.addEventListener('DOMMouseScroll', handleMOZWheel, { passive: false });
+    wpRef.current!.addEventListener('wheel', handleWheel, { passive: false });
+    wpRef.current!.addEventListener('mousewheel', handleWheel, { passive: false });
+    wpRef.current!.addEventListener('DOMMouseScroll', handleMOZWheel, { passive: false });
 
     return () => {
       // wpRef.current.removeEventListener('mousewheel', handleWheel);
@@ -607,19 +610,25 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
     // console.log(props);
     const scaleHeightZoom = (props.scaleHeight ?? DEFAULT_SET.scaleHeight) * window.devicePixelRatio;
     const startMarginZoom = (props.startMargin ?? DEFAULT_SET.startMargin) * window.devicePixelRatio;
+    const screenWidth = props.screenWidth??DEFAULT_SET.screenWidth;
+    const screenHeight = props.screenHeight??DEFAULT_SET.screenHeight;
+    const scaleHeight = props.scaleHeight??DEFAULT_SET.scaleHeight;
+    const startMargin = props.startMargin??DEFAULT_SET.startMargin;
     defaultSetting = {
       ...DEFAULT_SET,
       scaleHeightZoom,
       startMarginZoom,
-      hc: Math.round(screenWidth / 2), // 水平中心
-      vc: Math.round(screenHeight / 2), // 垂直中心
-      ...props,
+      screenWidth,
+      screenHeight,
+      scaleHeight,
+      startMargin
     }
-    if (isNaN(inheritZoom) || inheritZoom === -1) {
-      originInfo.dynamicTuning();
+
+    if (Number.isNaN(inheritZoom) || inheritZoom === -1) {
+      originInfo.dynamicTuning?.();
 
     } else {
-      inheritZoom !== zoom && selectZoom(inheritZoom);
+      inheritZoom !== zoom && selectZoom(inheritZoom!);
     }
   }, [screenWidth, screenHeight, inheritZoom])
 
@@ -668,10 +677,10 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   // 刻度线，页面位置调整
   function transformDoc() {
-    pageRef.current.style.transform =
+    pageRef.current!.style.transform =
       `scale(${1 / originInfo.unit}) translate(${originInfo.transformX * originInfo.unit}px,${originInfo.transformY * originInfo.unit}px)`;
-    hWpRuler.current.style.transform = `translateX(${originInfo.transformX}px`;
-    vWpRuler.current.style.transform = `rotate(90deg) translateX(${originInfo.transformY}px`;
+    hWpRuler.current!.style.transform = `translateX(${originInfo.transformX}px`;
+    vWpRuler.current!.style.transform = `rotate(90deg) translateX(${originInfo.transformY}px`;
   }
 
   // 进入刻度尺
@@ -679,27 +688,19 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
     // console.log(defaultSetting);
     switch (type) {
       case 'h': {
-        // 延迟显示，减少快速划过的闪烁
-        Shaking = setTimeout(() => {
-          Shaking = undefined;
-          if (typeof Shaking === 'undefined') {
-            setHIndicator(true);
-            const leftOffset = e.clientX - originInfo.transformX - originInfo.leftOffset;
-            hRuler.current.setAttribute('style', `left: ${e.clientX - originInfo.leftOffset}px; transform: translateY(${defaultSetting.scaleHeight}px)`);
-            hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
-
-            // Promise.resolve().then(() => {
-            //   console.log(3)
-            // });
-          }
-        }, 120)
+        setHIndicator(true);
+        Promise.resolve().then(() => {
+          // const leftOffset = e.clientX - originInfo.transformX - originInfo.leftOffset;
+          hRuler.current!.setAttribute('style', `left: ${e.clientX - originInfo.leftOffset}px; transform: translateY(${defaultSetting.scaleHeight}px)`);
+          // hRulerValue.current!.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
+        });
         break;
       }
 
       case 'v': {
         setVIndicator(true);
         Promise.resolve().then(() => {
-          vRuler.current.setAttribute('style', `left: ${e.clientY - originInfo.topOffset}px; transform: translateY(-100%)`);
+          vRuler.current!.setAttribute('style', `left: ${e.clientY - originInfo.topOffset}px; transform: translateY(-100%)`);
 
         });
         break;
@@ -716,9 +717,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
   function handleMouseLeave(e: any, type = 'h') {
     switch (type) {
       case 'h': {
-        if (typeof Shaking !== 'undefined') {
-          clearTimeout(Shaking);
-        }
         setHIndicator(false);
         break;
 
@@ -742,8 +740,8 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       case 'h': {
         if (hIndicator) {
           const leftOffset = e.clientX - originInfo.transformX - originInfo.leftOffset;
-          hRuler.current.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.scaleHeightZoom}px)`);
-          hRulerValue.current.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
+          hRuler.current!.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.scaleHeightZoom}px)`);
+          hRulerValue.current!.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
         }
         break;
@@ -753,8 +751,8 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
       case 'v': {
         if (vIndicator) {
           const topOffset = e.clientY - originInfo.transformY - originInfo.topOffset;
-          vRuler.current.setAttribute('style', `left: ${topOffset}px; transform: translateY(-100%)`);
-          vRulerValue.current.innerHTML = Math.round((topOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
+          vRuler.current!.setAttribute('style', `left: ${topOffset}px; transform: translateY(-100%)`);
+          vRulerValue.current!.innerHTML = Math.round((topOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
         } else {
           setVIndicator(true);
@@ -792,7 +790,6 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
         const realPos = e.clientY - originInfo.transformY - originInfo.topOffset - defaultSetting.startMarginZoom;
         const lines = vLines.filter(item => item != realPos);
         lines.push(realPos);
-        // originInfo.vLines.push(Math.round(realPos * originInfo.unit));
         originInfo.vLines[Math.round(realPos * originInfo.unit)] = 1;
 
         setVLines(lines);
@@ -994,7 +991,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
 
   const sliderNode = useMemo(() => <div className="zoom-slider">
     <MinusOutlined className="zoom-icon zoom-out" onClick={() => changeZoom(zoom - 17)} />
-    <Slider value={zoom} onChange={changeZoom} max={originInfo.maxScale} min={originInfo.minScale} step={17} />
+    <Slider value={zoom} onChange={v => changeZoom(v as number)} max={originInfo.maxScale} min={originInfo.minScale} step={17} />
     <PlusOutlined className="zoom-icon zoom-in" onClick={() => changeZoom(zoom + 17)} />
   </div>, [zoom]);
 
@@ -1103,7 +1100,7 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
         />
 
         <div className="edit-slider" id='edit-slider'>
-          <div className="scale-leval-input-wp">
+          <div className="scale-level-input-wp">
             <input type="number"
               className="scale-input"
               max={originInfo.maxScale}

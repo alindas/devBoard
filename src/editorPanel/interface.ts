@@ -18,21 +18,23 @@ export default interface IEditorPanel {
   screenBG: string,
   zoom: number,
   makeCustomized: TDragPos[],
-  dragTarget: TDragPos,
+  dragTarget: TDragPos | null,
   children: React.ReactNode,
   onDragEnd: (pos: dropPos, trigger: boolean) => void,
   onChasingLine: (pos: { left: number, top: number }) => void,
   onChangeZoom: (v: {zoom: number, unit: number }) => void
 }
 
-export interface IDefaultSet extends Partial<IEditorPanel> {
+export interface IDefaultSet {
+  screenWidth: number,
+  screenHeight: number,
+  scaleHeight: number,
   scaleHeightZoom: number,
+  startMargin: number,
   startMarginZoom: number,
   lineMargin: number,
   precision: number,
   zoomMode: string,
-  hc?: number,
-  vc?: number
 }
 
 export type TDragPos = {
@@ -44,7 +46,12 @@ export type TDragPos = {
 
 export type TOriginInfo = {
   firstMounted: boolean,
-  clientReact?: DOMRect,
+  clientReact: {
+    left: number,
+    top: number,
+    width: number,
+    height: number
+  },
   leftOffset: number, /** 面板距离客户端左侧距离 */
   topOffset: number,
   ratio: number,
@@ -63,7 +70,7 @@ export type TOriginInfo = {
   vLines: {[k: string]: 1}, // 方便拖拽组件时对齐
   hLines: {[k: string]: 1},
   domList?: TDragPos[],
-  dragTarget?: TDragPos,
+  dragTarget?: TDragPos | null,
   originalDragTarget?: any
 }
 

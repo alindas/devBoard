@@ -72,7 +72,7 @@ const Ruler = (props: IRuler) => {
     // console.log(originCanvasInfo.current);
 
     let tempCanvas = document.createElement('canvas')
-    let tempContext = tempCanvas.getContext('2d')
+    let tempContext = tempCanvas.getContext('2d')!
 
     tempCanvas.width = dprOriginCanvasWidth
     tempCanvas.height = dprOriginCanvasHeight
@@ -130,7 +130,7 @@ const Ruler = (props: IRuler) => {
       const _zoom = zoom < 110 ? 1.1 : pageZoom + 0.1;
       const width = (screenWidth > screenHeight ? screenWidth * _zoom : screenHeight * _zoom) + scaleHeight + startMargin;
       let canvas = canvasRef.current
-      let context = canvas.getContext('2d')
+      let context = canvas.getContext('2d')!
       const dpr = window.devicePixelRatio
       canvas.width = dpr * width;
       canvas.height = dpr * scaleHeight
