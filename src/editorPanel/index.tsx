@@ -743,6 +743,8 @@ export default function EditorPanel(props: Partial<IEditorPanel>) {
           hRuler.current!.setAttribute('style', `left: ${leftOffset}px; transform: translateY(${defaultSetting.scaleHeightZoom}px)`);
           hRulerValue.current!.innerHTML = Math.round((leftOffset - defaultSetting.startMarginZoom) * originInfo.unit)+'';
 
+        } else {
+          setHIndicator(true);
         }
         break;
 
