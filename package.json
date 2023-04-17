@@ -1,6 +1,6 @@
 {
   "name": "react-lc-panel",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "React低代码开发面板",
   "keywords": [
     "react-component",
@@ -21,16 +21,16 @@
   },
   "scripts": {
     "start": "webpack serve --mode=development",
-    "build": "webpack ",
-    "compile": "babel src --out-dir lib",
+    "build": "webpack --mode=production" ,
+    "compile": "tsc",
     "deploy": "gh-pages -d dist"
   },
   "author": "lhh",
   "license": "MIT",
   "dependencies": {
     "rc-slider": "^10.1.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.21.0",

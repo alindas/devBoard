@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "./build",
+    "baseUrl": "./src",
+    "outDir": "./lib",
     "module": "es2015",
     "target": "es5",
     "lib": ["dom","dom.iterable","esnext"],
     "jsx": "react-jsx",
-    "allowJs": true,
+    // "allowJs": true,
+    "declaration": true,
     "noEmitOnError": true,
     "noImplicitAny": false, // any 类型不报错
     "moduleResolution": "node",
@@ -17,7 +18,7 @@
     }
   },
   "include": [
-    "src/*", "examples",
+    "src/*",
   ],
   "exclude": [
     "node_modules",
